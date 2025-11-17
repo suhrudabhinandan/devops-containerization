@@ -4,4 +4,8 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 5000
-CMD ["npm", "start"]
+COPY wait-for-mysql.sh /wait-for-mysql.sh
+RUN chmod +x /wait-for-mysql.sh
+
+CMD ["sh", "-c", "/wait-for-mysql.sh && npm start"]
+
