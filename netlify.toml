@@ -1,7 +1,7 @@
 [build]
   base    = "frontend/app"
   command = "npm run build"
-  publish = "frontend/app/dist"
+  publish = "dist"
 
 [context.production.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20.22.0"
