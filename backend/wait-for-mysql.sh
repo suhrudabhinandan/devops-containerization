@@ -1,12 +1,21 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env sh
+DB_HOST=${DB_HOST:-mysql}
+DB_PORT=${DB_PORT:-3306}
+RETRY_INTERVAL=${RETRY_INTERVAL:-1}
+TIMEOUT=${TIMEOUT:-60}
 
-echo "Waiting for MySQL to be ready..."
+echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT} (timeout ${TIMEOUT}s)..."
 
-while ! nc -z mysql 3306; do
-  sleep 1
+elapsed=0
+while ! nc -z "$DB_HOST" "$DB_PORT"; do
+  sleep $RETRY_INTERVAL
+  elapsed=$((elapsed + RETRY_INTERVAL))
+  echo "Still waiting... (${elapsed}s)"
+  if [ "$elapsed" -ge "$TIMEOUT" ]; then
+    echo "Timed out waiting for MySQL at ${DB_HOST}:${DB_PORT}"
+    exit 1
+  fi
 done
 
-echo "MySQL is up!"
+echo "MySQL is reachable. Starting app..."
 exec "$@"
-
