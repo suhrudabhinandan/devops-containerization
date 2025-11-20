@@ -1,4 +1,3 @@
-// index.js
 const express = require('express');
 const app = express();
 require('dotenv').config();
@@ -41,15 +40,25 @@ app.use("/api/Result", require("./routes/result"));
 // Simple health check for Render / monitoring
 app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
-// Sync DB and start server
-sequelize.sync({ alter: true })
-  .then(() => {
+// Sync DB and start server (temporary safe mode: disable FK checks during sync)
+(async () => {
+  try {
+    console.log("Disabling foreign key checks for sync...");
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+
+    await sequelize.sync({ alter: true });
     console.log('✅ Tables synced!');
+
+    console.log("Re-enabling foreign key checks...");
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('DB sync failed:', err);
+    // Attempt to re-enable FK checks before exiting, ignore any error here
+    try { await sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { /* noop */ }
     process.exit(1); // fail fast so the host notices
-  });
+  }
+})();
